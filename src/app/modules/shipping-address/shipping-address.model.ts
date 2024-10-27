@@ -10,16 +10,14 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
       immutable: true,
       ref: "User",
     },
-    division: { type: String, required: true },
     district: { type: String, required: true },
     upazilla: { type: String, required: true },
     address: { type: String, required: true },
-    contact_no: { type: String, required: true },
+    billing_contact_number: { type: String, required: true },
     billing_name: { type: String, required: true },
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
   }
 );
 
