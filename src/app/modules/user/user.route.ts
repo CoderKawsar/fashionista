@@ -16,16 +16,18 @@ router.post(
   UserController.signUpCustomer
 );
 
-// super admin creation turned off now, as there is a super admin already
+/*================================================
+TURN THIS ROUTE OFF IN PRODUCTION
+================================================*/
 // create super admin
-router.post("/create-super-admin", UserController.createSuperAdmin);
+// router.post("/create-super-admin", validateRequest(UserValidation.CreateAdminZodSchema), UserController.createSuperAdmin);
 
 // create admin
 router.post(
   "/create-admin",
   limitRequestPerMinute(10),
   authRole(ENUM_USER_ROLE.SUPER_ADMIN),
-  validateRequest(UserValidation.CreateAdminOrTeacherZodSchema),
+  validateRequest(UserValidation.CreateAdminZodSchema),
   UserController.createAdmin
 );
 
@@ -40,7 +42,7 @@ router.post(
 // Refresh token
 router.post(
   "/refresh-token",
-  limitRequestPerMinute(5),
+  limitRequestPerMinute(2),
   validateRequest(UserValidation.RefreshTokenZodSchema),
   UserController.refreshToken
 );

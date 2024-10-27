@@ -8,6 +8,8 @@ import { StatusCodes } from "http-status-codes";
 import pick from "../../../shared/pick";
 import { userFilterableFields } from "./user.constant";
 import { paginationFields } from "../../constants/pagination";
+import ApiError from "../../../errors/ApiError";
+import { User } from "./user.model";
 
 const signUpCustomer = catchAsync(async (req: Request, res: Response) => {
   const { full_name, mobile_number, email, password } = req.body;
@@ -30,7 +32,7 @@ const signUpCustomer = catchAsync(async (req: Request, res: Response) => {
 
 const createSuperAdmin = catchAsync(async (req: Request, res: Response) => {
   req.body.role = ENUM_USER_ROLE.SUPER_ADMIN;
-  await UserService.createAdmin(req.body);
+  await UserService.createSuperAdmin(req.body);
 
   sendResponse(res, {
     success: true,
@@ -114,6 +116,13 @@ const getSingleUser = catchAsync(async (req: Request, res: Response) => {
   const { user_id } = req.params;
 
   const result = await UserService.getSingleUser(user_id);
+  if (
+    result?.role === ENUM_USER_ROLE.CUSTOMER &&
+    result?._id?.toString() !== req?.user?.user_id
+  ) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Unauthorized access");
+  }
+
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
@@ -126,8 +135,12 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
   const { user_id } = req.params;
   const payload = req.body;
 
-  if (req?.user?.role === ENUM_USER_ROLE.CUSTOMER) {
-    if (req.body.mobile_number) delete payload.mobile_number;
+  const user = await User.exists({ _id: user_id });
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User not found!");
+  }
+  if (user?._id?.toString() !== req?.user?.user_id) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Unauthorized edit access!");
   }
 
   const result = await UserService.updateUser(user_id, payload);
@@ -142,6 +155,15 @@ const updateUser = catchAsync(async (req: Request, res: Response) => {
 
 const deleteUser = catchAsync(async (req: Request, res: Response) => {
   const { user_id } = req.params;
+
+  const user = await User.exists({ _id: user_id });
+  if (!user) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "User not found!");
+  }
+  if (user?._id?.toString() !== req?.user?.user_id) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Unauthorized delete access!");
+  }
+
   await UserService.deleteUser(user_id);
 
   sendResponse(res, {

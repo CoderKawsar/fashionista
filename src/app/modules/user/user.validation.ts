@@ -2,16 +2,16 @@ import { z } from "zod";
 
 const RegisterUserZodSchema = z.object({
   body: z.object({
-    full_name: z.string({ required_error: "Nick name is required!" }).trim(),
+    full_name: z.string({ required_error: "Full name is required!" }).trim(),
     mobile_number: z
-      .string({ required_error: "Contact number is required!" })
+      .string({ required_error: "Mobile number is required!" })
       .trim(),
     email: z.string({ required_error: "Email is required!" }).trim(),
     password: z.string({ required_error: "Password is required!" }).min(8),
   }),
 });
 
-const CreateAdminOrTeacherZodSchema = z.object({
+const CreateAdminZodSchema = z.object({
   body: z.object({
     full_name: z.string({ required_error: "Nick name is required!" }).trim(),
     mobile_number: z
@@ -112,7 +112,7 @@ const ChangePasswordZodSchema = z.object({
 
 export const UserValidation = {
   RegisterUserZodSchema,
-  CreateAdminOrTeacherZodSchema,
+  CreateAdminZodSchema,
   UpdateUserZodSchema,
   UpdateUserAndUserDetailsZodSchema,
   LoginUserZodSchema,

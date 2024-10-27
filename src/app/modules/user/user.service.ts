@@ -11,7 +11,6 @@ import { UserUtills } from "./user.utills";
 import { jwtHelpers } from "../../helpers/jwtHelpers";
 import config from "../../../config";
 import { Secret } from "jsonwebtoken";
-import { Request } from "express";
 import { ENUM_USER_ROLE } from "../../enums/user";
 import { StatusCodes } from "http-status-codes";
 import { IPaginationOptions } from "../../../interfaces/common";
