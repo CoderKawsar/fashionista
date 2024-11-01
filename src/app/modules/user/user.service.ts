@@ -23,7 +23,13 @@ const signUpCustomer = async (userData: IUser) => {
   userData.role = ENUM_USER_ROLE.CUSTOMER;
   const createdUser = await UserUtills.createUser(userData);
 
-  return createdUser;
+  const { accessToken, refreshToken } =
+    await UserUtills.createTokenRefreshTokenForUser({
+      user_id: createdUser?._id.toString() as string,
+      role: createdUser?.role as string,
+    });
+
+  return { accessToken, refreshToken };
 };
 
 // create super admin

@@ -21,12 +21,18 @@ const signUpCustomer = catchAsync(async (req: Request, res: Response) => {
     role: ENUM_USER_ROLE.CUSTOMER,
   };
 
-  await UserService.signUpCustomer(userData);
+  const result = await UserService.signUpCustomer(userData);
+
+  res.cookie("refresh_token", result.refreshToken, {
+    httpOnly: true,
+    secure: config.env === "production",
+  });
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
     message: "Customer registered successfully",
+    data: result,
   });
 });
 
