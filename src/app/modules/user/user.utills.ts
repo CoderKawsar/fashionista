@@ -46,8 +46,19 @@ const createTokenRefreshTokenForUser = async (payload: {
   return { accessToken, refreshToken };
 };
 
+const getVerifiedUser = async (token: string) => {
+  const verifiedToken = jwtHelpers.verifyToken(
+    token,
+    config.jwt.secret as string
+  );
+  const isUserExist = await User.findById(verifiedToken?.user_id);
+
+  return isUserExist;
+};
+
 export const UserUtills = {
   createUser,
   createTokenRefreshTokenForUser,
   hashPassword,
+  getVerifiedUser,
 };

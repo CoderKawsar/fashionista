@@ -6,9 +6,11 @@ import { paginationFields } from "../../constants/pagination";
 import { StatusCodes } from "http-status-codes";
 import { CategoryService } from "./category.service";
 import { categoryFilterableFields } from "./category.constants";
+import { UserUtills } from "../user/user.utills";
+import { ENUM_USER_ROLE } from "../../enums/user";
 
 const createCategory = catchAsync(async (req: Request, res: Response) => {
-  await CategoryService.createCategory(req.body);
+  await CategoryService.createCategory(req);
 
   sendResponse(res, {
     success: true,
@@ -25,6 +27,16 @@ const getAllCategories = catchAsync(async (req: Request, res: Response) => {
     filters,
     paginationOptions
   );
+
+  if (req.headers.authorization) {
+    const verifiedUser = await UserUtills.getVerifiedUser(
+      req.headers.authorization as string
+    );
+
+    if (verifiedUser && verifiedUser?.role === ENUM_USER_ROLE.CUSTOMER) {
+      res.header("Cache-Control", "public, max-age=1800");
+    }
+  }
 
   sendResponse(res, {
     success: true,
@@ -47,9 +59,7 @@ const getSingleCategory = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateCategory = catchAsync(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const payload = req.body;
-  const result = await CategoryService.updateCategory(id, payload);
+  const result = await CategoryService.updateCategory(req);
 
   sendResponse(res, {
     success: true,
@@ -58,6 +68,7 @@ const updateCategory = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+
 const deleteCategory = catchAsync(async (req: Request, res: Response) => {
   const { id } = req.params;
   const result = await CategoryService.deleteCategory(id);

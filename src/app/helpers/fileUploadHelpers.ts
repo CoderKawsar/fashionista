@@ -1,6 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
 import multer, { FileFilterCallback } from "multer";
-import fs from "fs";
 import config from "../../config";
 import { ICloudinaryResponse, IUploadFile } from "../../interfaces/file";
 import ApiError from "../../errors/ApiError";
@@ -12,15 +11,7 @@ cloudinary.config({
   api_secret: config.cloudinary.api_secret,
 });
 
-// save file to server storage
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./public/temp/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.fieldname + "-" + Date.now().toString() + file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
 
 // Allowed image types
 const allowedMimeTypes = [
@@ -49,9 +40,8 @@ const fileFilter = (
   }
 };
 
-// finally upload to server storage
 const upload = multer({
-  storage: storage,
+  storage,
   limits: { fileSize: 5 * 1024 * 1024 },
   // @ts-ignore
   fileFilter,
@@ -61,17 +51,20 @@ const uploadToCloudinary = async (
   file: IUploadFile
 ): Promise<ICloudinaryResponse | undefined> => {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload(
-      file.path,
-      (error: Error, result: ICloudinaryResponse) => {
-        fs.unlinkSync(file.path);
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
+    cloudinary.uploader
+      .upload_stream(
+        { folder: "/fashionista" }, // Optional: Specify folder in Cloudinary
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else {
+            // @ts-ignore
+            resolve(result);
+          }
         }
-      }
-    );
+      )
+      // @ts-ignore
+      .end(file.buffer); // Directly pass the buffer here
   });
 };
 
@@ -84,7 +77,7 @@ const deleteFromCloudinary = async (
       const publicId = parts.pop()?.replace(/\.[^/.]+$/, "");
       if (publicId) {
         cloudinary.uploader.destroy(
-          publicId,
+          `fashionista/${publicId}`,
           (error: Error, result: ICloudinaryResponse) => {
             if (error) {
               reject(error);

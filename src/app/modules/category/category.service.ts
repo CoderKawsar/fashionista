@@ -9,11 +9,38 @@ import { Category } from "./category.model";
 import ApiError from "../../../errors/ApiError";
 import { categorySearchableFields } from "./category.constants";
 import { StatusCodes } from "http-status-codes";
+import { Request } from "express";
+import { IUploadFile } from "../../../interfaces/file";
+import { FileUploadHelper } from "../../helpers/fileUploadHelpers";
 
 // create category
-const createCategory = async (payload: ICategory): Promise<ICategory> => {
-  const result = await Category.create(payload);
-  return result;
+const createCategory = async (req: Request): Promise<ICategory> => {
+  const file = req.file as IUploadFile;
+
+  if (!file) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Please upload a file");
+  }
+
+  const uploadedImage = await FileUploadHelper.uploadToCloudinary(file);
+
+  if (!uploadedImage?.secure_url) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Unable to upload image"
+    );
+  }
+  req.body.image = uploadedImage?.secure_url;
+
+  try {
+    const result = await Category.create(req.body);
+    return result;
+  } catch (error) {
+    if (uploadedImage?.secure_url) {
+      FileUploadHelper.deleteFromCloudinary(uploadedImage?.secure_url);
+    }
+
+    throw error;
+  }
 };
 
 // get all categories
@@ -83,20 +110,32 @@ const getSingleCategory = async (id: string): Promise<ICategory | null> => {
 };
 
 // update category
-const updateCategory = async (
-  id: string,
-  payload: Partial<ICategory>
-): Promise<ICategory | null> => {
-  // updating CoursePlaylist
-  const result = await Category.findOneAndUpdate({ _id: id }, payload, {
-    new: true,
-  });
+const updateCategory = async (req: Request): Promise<ICategory | null> => {
+  const file = req.file as IUploadFile;
 
-  // if the CoursePlaylist you want to update was not present, i.e. not updated, throw error
-  if (!result) {
-    throw new ApiError(StatusCodes.OK, "Couldn't update. Category not found!");
+  const category = await Category.findById(req.params.id);
+  if (!category) {
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Category not found!");
   }
 
+  if (file) {
+    const uploadedImage = await FileUploadHelper.uploadToCloudinary(file);
+
+    if (!uploadedImage?.secure_url) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Unable to upload image"
+      );
+    }
+    await FileUploadHelper.deleteFromCloudinary(category?.image as string);
+    category.image = uploadedImage?.secure_url;
+  }
+
+  if (req.body.title) {
+    category.title = req.body.title;
+  }
+
+  const result = await category.save();
   return result;
 };
 
@@ -109,6 +148,9 @@ const deleteCategory = async (id: string) => {
   if (!result) {
     throw new ApiError(StatusCodes.OK, "Couldn't delete. Category not found!");
   }
+
+  // delete that CoursePlaylist banner image from cloudinary
+  FileUploadHelper.deleteFromCloudinary(result?.image as string);
 
   return result;
 };
