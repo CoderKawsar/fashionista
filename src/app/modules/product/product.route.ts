@@ -11,8 +11,13 @@ const router = Router();
 router.post(
   "/",
   authRole(ENUM_USER_ROLE.SUPER_ADMIN, ENUM_USER_ROLE.ADMIN),
-  FileUploadHelper.upload.single("main_image"),
-  FileUploadHelper.upload.fields([{ name: "other_images", maxCount: 7 }]),
+  FileUploadHelper.upload.fields([
+    {
+      name: "main_image",
+      maxCount: 1,
+    },
+    { name: "other_images", maxCount: 7 },
+  ]),
   (req: Request, res: Response, next: NextFunction) => {
     req.body = ProductValidation.createProductSchema.parse(
       JSON.parse(req.body.data)

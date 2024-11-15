@@ -16,7 +16,7 @@ const productSchema = new Schema<IProduct>(
         code: { type: String },
       },
     ],
-    size: { type: String, required: true },
+    size: [{ type: String, required: true }],
     target_customer_category: { type: String, required: true },
     category_id: {
       type: Schema.Types.ObjectId,

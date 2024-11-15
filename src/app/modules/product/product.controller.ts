@@ -8,13 +8,12 @@ import { StatusCodes } from "http-status-codes";
 import { productFilterableFields } from "./product.constants";
 
 const createProduct = catchAsync(async (req: Request, res: Response) => {
-  const result = await ProductService.createProduct(req);
+  await ProductService.createProduct(req);
 
   sendResponse(res, {
     success: true,
     statusCode: StatusCodes.OK,
     message: "Product added successfully!",
-    data: result,
   });
 });
 

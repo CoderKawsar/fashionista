@@ -17,20 +17,38 @@ import { productSearchableFields } from "./product.constants";
 import { Product } from "./product.model";
 
 // create Product
-const createProduct = async (req: Request): Promise<IProduct> => {
+const createProduct = async (req: Request) => {
   // to check if the category is present of the provided category-id
-  const category = await Category.findById(req.body.category_id);
+  const category = await Category.exists({ _id: req.body.category_id });
   if (!category) {
     throw new ApiError(StatusCodes.OK, "Category not found!");
   }
 
-  if (req.file) {
-    const file = req.file as IUploadFile;
+  const files = req.files as { [fieldName: string]: Express.Multer.File[] };
+  if (files.main_image) {
+    const uploadedImage = await FileUploadHelper.uploadToCloudinary(
+      files.main_image[0]
+    );
+    if (!uploadedImage?.secure_url) {
+      throw new ApiError(
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Unable to upload main image"
+      );
+    }
+    req.body.main_image = uploadedImage?.secure_url;
+  }
 
-    const uploadedImage = await FileUploadHelper.uploadToCloudinary(file);
-
-    if (uploadedImage) {
-      req.body.banner = uploadedImage.secure_url;
+  req.body.other_images = [];
+  if (files.other_images) {
+    for (const file of files.other_images) {
+      const uploadedImage = await FileUploadHelper.uploadToCloudinary(file);
+      if (!uploadedImage?.secure_url) {
+        throw new ApiError(
+          StatusCodes.INTERNAL_SERVER_ERROR,
+          "Unable to upload other image"
+        );
+      }
+      req.body.other_images.push(uploadedImage?.secure_url);
     }
   }
 
@@ -83,19 +101,11 @@ const getAllProducts = async (
     .limit(limit)
     .populate([
       {
-        path: "sub_category_id",
-        select: "title _id",
-        populate: {
-          path: "category_id",
-          select: "title _id",
-        },
-      },
-      {
-        path: "category_id", // Conditional population for root category_id
+        path: "category_id",
         select: "title _id",
       },
     ])
-    .select("-createdAt -updatedAt -__v -study_materials");
+    .select("-createdAt -updatedAt -__v");
 
   const total = await Product.countDocuments(whereConditions);
 

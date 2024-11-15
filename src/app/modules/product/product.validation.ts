@@ -1,47 +1,41 @@
 import { z } from "zod";
 
-const createProductSchema = z
-  .object({
-    title: z.string({
-      required_error: "Product name is required!",
-    }),
-    author: z.string({}).optional(),
-    membership_type: z.enum(["0", "1"]).refine(
-      (value) => {
-        return value === "0" || value === "1";
-      },
-      {
-        message: "Membership type must be either '0'(free) or '1'(paid)",
-      }
-    ),
-    sub_category_id: z.string({}).optional(),
-    category_id: z.string({}).optional(),
-    description: z.string({
-      required_error: "Description is required!",
-    }),
-    banner: z.string({}).optional(),
-    syllabus: z.string({}).optional(),
-    routine: z.string({}).optional(),
-    study_materials: z.string({}).optional(),
-  })
-  .refine((data) => {
-    const hasSubCategory = data.hasOwnProperty("sub_category_id");
-    const hasCategory = data.hasOwnProperty("category_id");
-
-    // Allow both sub_category_id and category_id
-    if (hasSubCategory && hasCategory) {
-      return data;
-    }
-
-    if (!hasSubCategory && !hasCategory) {
-      throw new Error(
-        "At least one of sub_category_id or category_id is required"
-      );
-    }
-
-    // Validation successful, return the data
-    return data;
-  });
+const createProductSchema = z.object({
+  title: z.string({
+    required_error: "Product name is required!",
+  }),
+  description: z.string({
+    required_error: "Description is required!",
+  }),
+  price: z
+    .number({
+      required_error: "Price is required!",
+    })
+    .min(0),
+  dummy_price: z.number({}).min(0).optional(),
+  available_quantity: z
+    .number({
+      required_error: "Quantity is required!",
+    })
+    .min(0),
+  color: z
+    .array(
+      z
+        .object({
+          name: z.string().optional(),
+          code: z.string().optional(),
+        })
+        .optional()
+    )
+    .optional(),
+  size: z.array(z.string({})).optional(),
+  target_customer_category: z.string({
+    required_error: "Target customer category is required!",
+  }),
+  category_id: z.string({
+    required_error: "Category is required!",
+  }),
+});
 
 const updateProductZodSchema = z.object({
   title: z.string({}).optional(),
